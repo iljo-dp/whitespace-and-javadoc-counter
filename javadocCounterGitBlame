@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <directory>"
+    exit 1
+fi
+
+directory="$1"
+
+if [ ! -d "$directory" ]; then
+    echo "Error: Directory '$directory' not found."
+    exit 1
+fi
+
+# Change directory to the specified directory
+cd "$directory" || exit
+
+declare -A author_javadoc_lines  # Associative array to store JavaDoc lines by author
+
+count_javadoc_lines() {
+    local file="$1"
+    if [ -f "$file" ] && [[ "$file" == *.java ]]; then
+        while IFS= read -r line; do
+            author=$(git blame -e -L "$line,$line" --porcelain "$file" | grep "^author " | cut -d ' ' -f 2-)
+            if [[ -n "$author" ]]; then
+                ((author_javadoc_lines[$author]++))
+            fi
+        done < <(grep -nE '/\*|\*/|^\s*\*' "$file" | cut -d: -f1)  # Count JavaDoc lines
+    elif [ -d "$file" ]; then
+        for subfile in "$file"/*; do
+            count_javadoc_lines "$subfile"
+        done
+    fi
+}
+
+for file in ./*; do
+    count_javadoc_lines "$file"
+done
+
+# Print summary
+echo "JavaDoc lines count by author:"
+for author in "${!author_javadoc_lines[@]}"; do
+    echo "$author: ${author_javadoc_lines[$author]}"
+done
+
