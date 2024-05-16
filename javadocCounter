@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <directory>"
+    exit 1
+fi
+
+directory="$1"
+
+if [ ! -d "$directory" ]; then
+    echo "Error: Directory '$directory' not found."
+    exit 1
+fi
+
+total_star_lines=0
+while IFS= read -r -d '' file; do
+    star_lines=$(grep -cE '/\*|\*/|^\s*\*' "$file")
+    total_star_lines=$((total_star_lines + star_lines))
+    echo "Lines with '*', '/*', or '*/' in $(basename "$file"): $star_lines"
+done < <(find "$directory" -type f -name '*.java' -print0)
+
+echo "Total lines with '*', '/*', or '*/' in .java files in '$directory' and its subdirectories: $total_star_lines"
