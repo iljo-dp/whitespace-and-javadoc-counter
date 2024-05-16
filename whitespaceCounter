@@ -1,0 +1,34 @@
+#!/bin/bash
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <directory>"
+    exit 1
+fi
+
+directory="$1"
+
+if [ ! -d "$directory" ]; then
+    echo "Error: Directory '$directory' not found."
+    exit 1
+fi
+
+total_whitespace_lines=0
+count_whitespace_lines() {
+    local file="$1"
+    if [ -f "$file" ] && [[ "$file" == *.java ]]; then
+        whitespace_lines=$(grep -cE '^[[:space:]]*$' "$file")  # Count lines with only whitespace
+        total_whitespace_lines=$((total_whitespace_lines + whitespace_lines))
+        echo "Whitespace lines count in $(basename "$file"): $whitespace_lines"
+    elif [ -d "$file" ]; then
+        for subfile in "$file"/*; do
+            count_whitespace_lines "$subfile"
+        done
+    fi
+}
+
+for file in "$directory"/*; do
+    count_whitespace_lines "$file"
+done
+
+echo "Total whitespace lines count in .java files in '$directory': $total_whitespace_lines"
+
